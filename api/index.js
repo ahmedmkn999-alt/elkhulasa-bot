@@ -1,26 +1,35 @@
 const axios = require("axios");
 const db = require("../firebase");
-const content = require("../content");
 
 // =================== CONFIG ===================
-const CLIENT_BOT_TOKEN = process.env.CLIENT_BOT_TOKEN;
-const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN;
+const CLIENT_BOT_TOKEN = "8794840933:AAEZTk1cBTr-TcTi5f1w_QiLneNvVyCFnHM";
+const ADMIN_BOT_TOKEN = "8777919219:AAEc_mZ9I-jdfPTcnRUf9VKL9cWg3Nh3Rc4";
+const VIDEO_BOT_TOKEN = "7847315022:AAGbUTrd8R1V8bKZMpJCZrVoL3WNiEmDklY";
 const ADMIN_ID = 1778665778;
 const ADMIN_USERNAME = "@Ahmedddd50";
-const TRIAL_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const TRIAL_DURATION_MS = 30 * 60 * 1000;
+
+// =================== SUBJECTS ===================
+const SUBJECTS = {
+  arabic:    { name: "اللغة العربية 📚", teachers: ["أ. محمد صلاح"] },
+  english:   { name: "اللغة الإنجليزية 🌍", teachers: ["أ. انجلشاوي", "أ. مي مجدي"] },
+  physics:   { name: "الفيزياء ⚡", teachers: ["أ. محمد عبد المعبود", "د. كيرلس", "م. محمود مجدي"] },
+  chemistry: { name: "الكيمياء 🧪", teachers: ["أ. خالد صقر", "أ. محمد عبد الجواد", "د. جون جيهاد"] },
+  biology:   { name: "الأحياء 🧬", teachers: ["د. أحمد الجوهري", "د. جيوم ماجد"] },
+  math:      { name: "الرياضيات 📐", teachers: ["أ. لطفي الزهران"] },
+};
 
 // =================== HELPERS ===================
-async function sendMessage(token, chatId, text, extra = {}) {
+async function send(token, chatId, text, extra = {}) {
   try {
     await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
-      chat_id: chatId,
-      text,
-      parse_mode: "HTML",
-      ...extra,
+      chat_id: chatId, text, parse_mode: "HTML", ...extra,
     });
-  } catch (e) {
-    console.error("sendMessage error:", e.response?.data || e.message);
-  }
+  } catch (e) { console.error("send error:", e.response?.data || e.message); }
+}
+
+async function answerCB(token, id) {
+  try { await axios.post(`https://api.telegram.org/bot${token}/answerCallbackQuery`, { callback_query_id: id }); } catch {}
 }
 
 async function getUser(userId) {
@@ -30,419 +39,426 @@ async function getUser(userId) {
 
 async function saveUser(userId, username, firstName) {
   await db.ref(`users/${userId}`).set({
-    userId,
-    username: username || "unknown",
-    firstName: firstName || "",
-    status: "trial",
-    trialStart: Date.now(),
-    joinedAt: Date.now(),
-    banned: false,
+    userId, username: username || "unknown", firstName: firstName || "",
+    status: "trial", trialStart: Date.now(), joinedAt: Date.now(), banned: false,
   });
-}
-
-function isTrialActive(user) {
-  if (user.status !== "trial") return false;
-  return Date.now() - user.trialStart < TRIAL_DURATION_MS;
-}
-
-function isSubscriptionActive(user) {
-  if (user.status !== "active") return false;
-  if (!user.subscriptionEnd) return false;
-  return Date.now() < user.subscriptionEnd;
 }
 
 function hasAccess(user) {
   if (user.banned) return false;
-  return isTrialActive(user) || isSubscriptionActive(user);
+  if (user.status === "trial") return Date.now() - user.trialStart < TRIAL_DURATION_MS;
+  if (user.status === "active") return user.subscriptionEnd > Date.now();
+  return false;
 }
 
-function getTrialTimeLeft(user) {
-  const remaining = TRIAL_DURATION_MS - (Date.now() - user.trialStart);
-  const minutes = Math.floor(remaining / 60000);
-  const seconds = Math.floor((remaining % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+function trialLeft(user) {
+  const ms = TRIAL_DURATION_MS - (Date.now() - user.trialStart);
+  return `${Math.floor(ms/60000)}:${String(Math.floor((ms%60000)/1000)).padStart(2,"0")}`;
 }
 
-// =================== SUBJECTS KEYBOARD ===================
-function getSubjectsKeyboard() {
-  return {
-    inline_keyboard: [
-      [
-        { text: "📚 اللغة العربية", callback_data: "subject_arabic" },
-        { text: "🌍 اللغة الإنجليزية", callback_data: "subject_english" },
-      ],
-      [
-        { text: "⚡ الفيزياء", callback_data: "subject_physics" },
-        { text: "🧪 الكيمياء", callback_data: "subject_chemistry" },
-      ],
-      [
-        { text: "🧬 الأحياء", callback_data: "subject_biology" },
-        { text: "📐 الرياضيات", callback_data: "subject_math" },
-      ],
-    ],
-  };
+// =================== KEYBOARDS ===================
+function subjectsKeyboard() {
+  return { inline_keyboard: [
+    [{ text: "📚 اللغة العربية", callback_data: "sub_arabic" }, { text: "🌍 اللغة الإنجليزية", callback_data: "sub_english" }],
+    [{ text: "⚡ الفيزياء", callback_data: "sub_physics" }, { text: "🧪 الكيمياء", callback_data: "sub_chemistry" }],
+    [{ text: "🧬 الأحياء", callback_data: "sub_biology" }, { text: "📐 الرياضيات", callback_data: "sub_math" }],
+  ]};
+}
+
+function teachersKeyboard(subjectKey) {
+  const teachers = SUBJECTS[subjectKey].teachers;
+  const rows = teachers.map(t => [{ text: t, callback_data: `teacher_${subjectKey}_${t}` }]);
+  rows.push([{ text: "🔙 رجوع", callback_data: "back_subjects" }]);
+  return { inline_keyboard: rows };
+}
+
+async function lessonsKeyboard(subjectKey, teacherName) {
+  const snap = await db.ref(`content/${subjectKey}/${teacherName}`).get();
+  if (!snap.exists()) return null;
+  const lessons = snap.val();
+  const rows = Object.keys(lessons).map(lessonName => [{
+    text: `📖 ${lessonName}`, callback_data: `lesson_${subjectKey}_${encodeTeacher(teacherName)}_${lessonName}`
+  }]);
+  rows.push([{ text: "🔙 رجوع", callback_data: `sub_${subjectKey}` }]);
+  return { inline_keyboard: rows };
+}
+
+function encodeTeacher(name) { return Buffer.from(name).toString("base64").replace(/=/g,""); }
+function decodeTeacher(encoded) {
+  const pad = encoded.length % 4 === 0 ? "" : "=".repeat(4 - encoded.length % 4);
+  return Buffer.from(encoded + pad, "base64").toString("utf8");
 }
 
 // =================== CLIENT BOT ===================
-async function handleClientBot(update) {
+async function handleClient(update) {
   const msg = update.message;
-  const callbackQuery = update.callback_query;
+  const cb = update.callback_query;
 
   if (msg) {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    const username = msg.from.username || "";
-    const firstName = msg.from.first_name || "";
+    const { id: chatId, } = msg.chat;
+    const { id: userId, username, first_name } = msg.from;
     const text = msg.text || "";
 
     let user = await getUser(userId);
-    if (!user) {
-      await saveUser(userId, username, firstName);
-      user = await getUser(userId);
-    }
-
-    if (user.banned) {
-      await sendMessage(CLIENT_BOT_TOKEN, chatId, "🚫 تم حظرك من استخدام البوت.");
-      return;
-    }
+    if (!user) { await saveUser(userId, username, first_name); user = await getUser(userId); }
+    if (user.banned) { await send(CLIENT_BOT_TOKEN, chatId, "🚫 تم حظرك."); return; }
 
     if (text === "/start") {
-      let statusMsg = "";
-      if (isTrialActive(user)) {
-        statusMsg = `⏱ <b>تجربة مجانية</b> - متبقي: ${getTrialTimeLeft(user)}`;
-      } else if (isSubscriptionActive(user)) {
-        const endDate = new Date(user.subscriptionEnd).toLocaleDateString("ar-EG");
-        statusMsg = `✅ <b>مشترك</b> - ينتهي: ${endDate}`;
-      } else {
-        statusMsg = `🔒 <b>غير مشترك</b>`;
-      }
+      let statusLine = "";
+      if (user.status === "trial" && Date.now() - user.trialStart < TRIAL_DURATION_MS)
+        statusLine = `⏱ <b>تجربة مجانية</b> - متبقي: ${trialLeft(user)}`;
+      else if (user.status === "active" && user.subscriptionEnd > Date.now())
+        statusLine = `✅ <b>مشترك</b> حتى ${new Date(user.subscriptionEnd).toLocaleDateString("ar-EG")}`;
+      else
+        statusLine = `🔒 <b>غير مشترك</b>`;
 
-      await sendMessage(
-        CLIENT_BOT_TOKEN,
-        chatId,
-        `🎓 <b>أهلاً بك في الخُلاصة!</b>\n` +
-        `مراجعات ثانوية عامة - نخبة أفضل المدرسين\n\n` +
-        `${statusMsg}\n\n` +
-        `اختر المادة اللي عايز تراجعها 👇`,
-        { reply_markup: getSubjectsKeyboard() }
+      await send(CLIENT_BOT_TOKEN, chatId,
+        `🎓 <b>أهلاً بك في الخُلاصة!</b>\n\n` +
+        `هنا تلاقي أفضل مراجعات الثانوية العامة\n` +
+        `من نخبة المدرسين — منظمة ومرتبة لك.\n\n` +
+        `📌 البوت بيوفرلك:\n` +
+        `• مراجعات لكل المواد\n` +
+        `• تحديثات مستمرة\n` +
+        `• وصول سريع وسهل\n\n` +
+        `${statusLine}\n\n` +
+        `👇 اختر المادة:`,
+        { reply_markup: subjectsKeyboard() }
       );
     }
   }
 
-  if (callbackQuery) {
-    const chatId = callbackQuery.message.chat.id;
-    const userId = callbackQuery.from.id;
-    const data = callbackQuery.data;
-
-    await axios.post(`https://api.telegram.org/bot${CLIENT_BOT_TOKEN}/answerCallbackQuery`, {
-      callback_query_id: callbackQuery.id,
-    });
+  if (cb) {
+    const chatId = cb.message.chat.id;
+    const userId = cb.from.id;
+    const data = cb.data;
+    await answerCB(CLIENT_BOT_TOKEN, cb.id);
 
     let user = await getUser(userId);
-    if (!user) {
-      await saveUser(userId, callbackQuery.from.username || "", callbackQuery.from.first_name || "");
-      user = await getUser(userId);
-    }
+    if (!user) { await saveUser(userId, cb.from.username, cb.from.first_name); user = await getUser(userId); }
+    if (user.banned) { await send(CLIENT_BOT_TOKEN, chatId, "🚫 تم حظرك."); return; }
 
-    if (user.banned) {
-      await sendMessage(CLIENT_BOT_TOKEN, chatId, "🚫 تم حظرك من استخدام البوت.");
+    // Back to subjects
+    if (data === "back_subjects") {
+      await send(CLIENT_BOT_TOKEN, chatId, "👇 اختر المادة:", { reply_markup: subjectsKeyboard() });
       return;
     }
 
-    if (data.startsWith("subject_")) {
-      const subjectKey = data.replace("subject_", "");
-      const subject = content[subjectKey];
-      if (!subject) return;
+    // Subject selected
+    if (data.startsWith("sub_")) {
+      const subKey = data.replace("sub_", "");
+      if (!SUBJECTS[subKey]) return;
 
       if (!hasAccess(user)) {
-        let msg = `🔒 <b>انتهت صلاحيتك!</b>\n\n`;
-        if (user.status === "trial") {
-          msg += `انتهت التجربة المجانية (30 دقيقة)\n\n`;
-        }
-        msg += `للاشتراك: <b>100 جنيه مصري</b>\n`;
-        msg += `تواصل مع الإدارة: ${ADMIN_USERNAME}`;
-        await sendMessage(CLIENT_BOT_TOKEN, chatId, msg);
+        await send(CLIENT_BOT_TOKEN, chatId,
+          `🔒 <b>انتهت صلاحيتك!</b>\n\n` +
+          `للاشتراك بـ <b>100 جنيه مصري</b>\n` +
+          `تواصل مع الإدارة: ${ADMIN_USERNAME}`
+        );
         return;
       }
 
-      // Show trial timer if in trial
-      let headerMsg = `📖 <b>${subject.name}</b>\n`;
-      if (isTrialActive(user)) {
-        headerMsg += `⏱ متبقي من التجربة: ${getTrialTimeLeft(user)}\n`;
-      }
+      const header = user.status === "trial" ? `⏱ متبقي من التجربة: ${trialLeft(user)}\n\n` : "";
+      await send(CLIENT_BOT_TOKEN, chatId,
+        `${header}👨‍🏫 اختر المدرس:`,
+        { reply_markup: teachersKeyboard(subKey) }
+      );
+      return;
+    }
 
-      const teachers = subject.teachers;
-      let hasLinks = false;
+    // Teacher selected
+    if (data.startsWith("teacher_")) {
+      const parts = data.replace("teacher_", "").split("_");
+      const subKey = parts[0];
+      const teacherName = parts.slice(1).join("_");
 
-      for (const teacher of teachers) {
-        if (teacher.links && teacher.links.length > 0) {
-          hasLinks = true;
-          let linksText = `👨‍🏫 <b>${teacher.name}</b>\n\n`;
-          teacher.links.forEach((link, i) => {
-            linksText += `${i + 1}. <a href="${link.url}">${link.title}</a>\n`;
-          });
-          await sendMessage(CLIENT_BOT_TOKEN, chatId, linksText, {
-            disable_web_page_preview: true,
-          });
-        }
-      }
-
-      if (!hasLinks) {
-        await sendMessage(
-          CLIENT_BOT_TOKEN,
-          chatId,
-          `${headerMsg}\n⏳ لم يتم رفع مراجعات لهذه المادة بعد.\nسيتم الإعلان فور الرفع!`
+      if (!hasAccess(user)) {
+        await send(CLIENT_BOT_TOKEN, chatId,
+          `🔒 <b>انتهت صلاحيتك!</b>\n\nللاشتراك تواصل: ${ADMIN_USERNAME}`
         );
+        return;
       }
+
+      const kb = await lessonsKeyboard(subKey, teacherName);
+      if (!kb) {
+        await send(CLIENT_BOT_TOKEN, chatId,
+          `📂 <b>${teacherName}</b>\n\n⏳ لم يتم رفع دروس بعد.\nسيتم الإعلان فور الرفع!`,
+          { reply_markup: { inline_keyboard: [[{ text: "🔙 رجوع", callback_data: `sub_${subKey}` }]] } }
+        );
+        return;
+      }
+      await send(CLIENT_BOT_TOKEN, chatId, `📖 اختر الدرس:`, { reply_markup: kb });
+      return;
+    }
+
+    // Lesson selected
+    if (data.startsWith("lesson_")) {
+      const withoutPrefix = data.replace("lesson_", "");
+      const firstUnderscore = withoutPrefix.indexOf("_");
+      const subKey = withoutPrefix.substring(0, firstUnderscore);
+      const rest = withoutPrefix.substring(firstUnderscore + 1);
+      const secondUnderscore = rest.indexOf("_");
+      const encodedTeacher = rest.substring(0, secondUnderscore);
+      const lessonName = rest.substring(secondUnderscore + 1);
+      const teacherName = decodeTeacher(encodedTeacher);
+
+      if (!hasAccess(user)) {
+        await send(CLIENT_BOT_TOKEN, chatId,
+          `🔒 <b>انتهت صلاحيتك!</b>\n\nللاشتراك تواصل: ${ADMIN_USERNAME}`
+        );
+        return;
+      }
+
+      const snap = await db.ref(`content/${subKey}/${teacherName}/${lessonName}`).get();
+      if (!snap.exists()) {
+        await send(CLIENT_BOT_TOKEN, chatId, "⏳ لم يتم رفع فيديوهات لهذا الدرس بعد.");
+        return;
+      }
+
+      const videos = snap.val();
+      let txt = `🎬 <b>${lessonName}</b>\n👨‍🏫 ${teacherName}\n\n`;
+      Object.entries(videos).forEach(([title, url], i) => {
+        txt += `${i+1}. <a href="${url}">${title}</a>\n`;
+      });
+      await send(CLIENT_BOT_TOKEN, chatId, txt, { disable_web_page_preview: true });
+      return;
     }
   }
 }
 
 // =================== ADMIN BOT ===================
-async function handleAdminBot(update) {
+async function handleAdmin(update) {
   const msg = update.message;
-  if (!msg) return;
-
+  if (!msg || msg.from.id !== ADMIN_ID) return;
   const chatId = msg.chat.id;
-  const userId = msg.from.id;
   const text = msg.text || "";
 
-  if (userId !== ADMIN_ID) {
-    await sendMessage(ADMIN_BOT_TOKEN, chatId, "⛔ غير مصرح لك.");
-    return;
-  }
-
-  // /start
   if (text === "/start") {
-    await sendMessage(
-      ADMIN_BOT_TOKEN, chatId,
+    await send(ADMIN_BOT_TOKEN, chatId,
       `👑 <b>لوحة تحكم الخُلاصة</b>\n\n` +
-      `<b>أوامر المستخدمين:</b>\n` +
-      `/activate @username 30 - تفعيل لمدة 30 يوم\n` +
-      `/ban @username - حظر مستخدم\n` +
-      `/unban @username - رفع الحظر\n` +
-      `/info @username - معلومات مستخدم\n\n` +
+      `<b>المستخدمون:</b>\n` +
+      `/activate @user 30 - تفعيل لمدة 30 يوم\n` +
+      `/ban @user - حظر\n` +
+      `/unban @user - رفع حظر\n` +
+      `/resettrial @user - إعادة تجربة مجانية\n` +
+      `/info @user - معلومات\n\n` +
       `<b>الإحصائيات:</b>\n` +
       `/stats - إحصائيات عامة\n` +
-      `/list active - قائمة المشتركين\n` +
-      `/list banned - قائمة المحظورين\n` +
-      `/list trial - قائمة في التجربة\n\n` +
+      `/list active - المشتركون\n` +
+      `/list banned - المحظورون\n\n` +
       `<b>البرودكاست:</b>\n` +
-      `/broadcast رسالتك - إرسال لكل الطلاب`
+      `/broadcast رسالتك`
     );
     return;
   }
 
-  // /stats
   if (text === "/stats") {
     const snap = await db.ref("users").get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, "📊 لا يوجد مستخدمون.");
-      return;
-    }
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, "لا يوجد مستخدمون."); return; }
     const users = Object.values(snap.val());
     const now = Date.now();
-    const active = users.filter(u => u.status === "active" && u.subscriptionEnd > now).length;
+    const active = users.filter(u => u.status === "active" && u.subscriptionEnd > now && !u.banned).length;
     const trial = users.filter(u => u.status === "trial" && (now - u.trialStart) < TRIAL_DURATION_MS).length;
-    const expired = users.filter(u => 
-      (u.status === "trial" && (now - u.trialStart) >= TRIAL_DURATION_MS) ||
-      (u.status === "active" && u.subscriptionEnd <= now)
-    ).length;
+    const expired = users.filter(u => !u.banned && !( (u.status==="active"&&u.subscriptionEnd>now) || (u.status==="trial"&&(now-u.trialStart)<TRIAL_DURATION_MS) )).length;
     const banned = users.filter(u => u.banned).length;
-
-    await sendMessage(
-      ADMIN_BOT_TOKEN, chatId,
+    await send(ADMIN_BOT_TOKEN, chatId,
       `📊 <b>إحصائيات الخُلاصة</b>\n\n` +
-      `👥 إجمالي المستخدمين: <b>${users.length}</b>\n` +
-      `✅ مشتركون نشطون: <b>${active}</b>\n` +
-      `⏱ في التجربة المجانية: <b>${trial}</b>\n` +
-      `❌ منتهي الصلاحية: <b>${expired}</b>\n` +
+      `👥 الإجمالي: <b>${users.length}</b>\n` +
+      `✅ مشتركون: <b>${active}</b>\n` +
+      `⏱ في التجربة: <b>${trial}</b>\n` +
+      `❌ منتهي: <b>${expired}</b>\n` +
       `🚫 محظورون: <b>${banned}</b>`
     );
     return;
   }
 
-  // /activate @username days
   if (text.startsWith("/activate ")) {
     const parts = text.split(" ");
-    const targetUsername = parts[1]?.replace("@", "").trim();
+    const uname = parts[1]?.replace("@","").trim();
     const days = parseInt(parts[2]) || 30;
-
-    const snap = await db.ref("users").orderByChild("username").equalTo(targetUsername).get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, `❌ المستخدم @${targetUsername} غير موجود.`);
-      return;
-    }
-
-    const subscriptionEnd = Date.now() + days * 24 * 60 * 60 * 1000;
-    const endDate = new Date(subscriptionEnd).toLocaleDateString("ar-EG");
+    const snap = await db.ref("users").orderByChild("username").equalTo(uname).get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, `❌ @${uname} غير موجود.`); return; }
+    const subEnd = Date.now() + days * 86400000;
     const updates = {};
-    snap.forEach(child => {
-      updates[`users/${child.key}/status`] = "active";
-      updates[`users/${child.key}/subscriptionEnd`] = subscriptionEnd;
-      updates[`users/${child.key}/banned`] = false;
-    });
+    let uid;
+    snap.forEach(c => { updates[`users/${c.key}/status`]="active"; updates[`users/${c.key}/subscriptionEnd`]=subEnd; updates[`users/${c.key}/banned`]=false; uid=c.val().userId; });
     await db.ref().update(updates);
-
-    // Notify user
-    let userIdToNotify;
-    snap.forEach(child => { userIdToNotify = child.val().userId; });
-    if (userIdToNotify) {
-      await sendMessage(CLIENT_BOT_TOKEN, userIdToNotify,
-        `🎉 <b>تم تفعيل اشتراكك!</b>\n\n` +
-        `✅ اشتراكك نشط لمدة <b>${days} يوم</b>\n` +
-        `📅 ينتهي في: <b>${endDate}</b>\n\n` +
-        `ابعت /start للبدء 🚀`
-      );
-    }
-
-    await sendMessage(ADMIN_BOT_TOKEN, chatId,
-      `✅ تم تفعيل @${targetUsername}\n📅 ينتهي: ${endDate} (${days} يوم)`
-    );
+    if (uid) await send(CLIENT_BOT_TOKEN, uid, `🎉 <b>تم تفعيل اشتراكك!</b>\n✅ ${days} يوم\n📅 ينتهي: ${new Date(subEnd).toLocaleDateString("ar-EG")}\n\nابعت /start 🚀`);
+    await send(ADMIN_BOT_TOKEN, chatId, `✅ تم تفعيل @${uname} لمدة ${days} يوم`);
     return;
   }
 
-  // /ban @username
+  if (text.startsWith("/resettrial ")) {
+    const uname = text.replace("/resettrial ","").replace("@","").trim();
+    const snap = await db.ref("users").orderByChild("username").equalTo(uname).get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, `❌ @${uname} غير موجود.`); return; }
+    const updates = {};
+    let uid;
+    snap.forEach(c => { updates[`users/${c.key}/status`]="trial"; updates[`users/${c.key}/trialStart`]=Date.now(); uid=c.val().userId; });
+    await db.ref().update(updates);
+    if (uid) await send(CLIENT_BOT_TOKEN, uid, `🎁 تم تجديد تجربتك المجانية! لديك 30 دقيقة جديدة 🚀`);
+    await send(ADMIN_BOT_TOKEN, chatId, `✅ تم إعادة تجربة @${uname}`);
+    return;
+  }
+
   if (text.startsWith("/ban ")) {
-    const targetUsername = text.replace("/ban ", "").replace("@", "").trim();
-    const snap = await db.ref("users").orderByChild("username").equalTo(targetUsername).get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, `❌ المستخدم @${targetUsername} غير موجود.`);
-      return;
-    }
+    const uname = text.replace("/ban ","").replace("@","").trim();
+    const snap = await db.ref("users").orderByChild("username").equalTo(uname).get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, `❌ @${uname} غير موجود.`); return; }
     const updates = {};
-    snap.forEach(child => { updates[`users/${child.key}/banned`] = true; });
+    snap.forEach(c => { updates[`users/${c.key}/banned`]=true; });
     await db.ref().update(updates);
-    await sendMessage(ADMIN_BOT_TOKEN, chatId, `🚫 تم حظر @${targetUsername}`);
+    await send(ADMIN_BOT_TOKEN, chatId, `🚫 تم حظر @${uname}`);
     return;
   }
 
-  // /unban @username
   if (text.startsWith("/unban ")) {
-    const targetUsername = text.replace("/unban ", "").replace("@", "").trim();
-    const snap = await db.ref("users").orderByChild("username").equalTo(targetUsername).get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, `❌ المستخدم @${targetUsername} غير موجود.`);
-      return;
-    }
+    const uname = text.replace("/unban ","").replace("@","").trim();
+    const snap = await db.ref("users").orderByChild("username").equalTo(uname).get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, `❌ @${uname} غير موجود.`); return; }
     const updates = {};
-    snap.forEach(child => { updates[`users/${child.key}/banned`] = false; });
+    snap.forEach(c => { updates[`users/${c.key}/banned`]=false; });
     await db.ref().update(updates);
-    await sendMessage(ADMIN_BOT_TOKEN, chatId, `✅ تم رفع الحظر عن @${targetUsername}`);
+    await send(ADMIN_BOT_TOKEN, chatId, `✅ تم رفع الحظر عن @${uname}`);
     return;
   }
 
-  // /info @username
   if (text.startsWith("/info ")) {
-    const targetUsername = text.replace("/info ", "").replace("@", "").trim();
-    const snap = await db.ref("users").orderByChild("username").equalTo(targetUsername).get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, `❌ المستخدم @${targetUsername} غير موجود.`);
-      return;
-    }
-    snap.forEach(child => {
-      const u = child.val();
-      const now = Date.now();
-      let statusText = "";
-      if (u.banned) statusText = "🚫 محظور";
-      else if (u.status === "active" && u.subscriptionEnd > now) {
-        statusText = `✅ مشترك - ينتهي ${new Date(u.subscriptionEnd).toLocaleDateString("ar-EG")}`;
-      } else if (u.status === "trial" && (now - u.trialStart) < TRIAL_DURATION_MS) {
-        statusText = "⏱ في التجربة المجانية";
-      } else statusText = "❌ منتهي الصلاحية";
-
-      sendMessage(ADMIN_BOT_TOKEN, chatId,
-        `👤 <b>معلومات المستخدم</b>\n\n` +
-        `الاسم: ${u.firstName || "غير محدد"}\n` +
-        `يوزرنيم: @${u.username}\n` +
-        `ID: ${u.userId}\n` +
-        `الحالة: ${statusText}\n` +
-        `انضم في: ${new Date(u.joinedAt).toLocaleDateString("ar-EG")}`
-      );
+    const uname = text.replace("/info ","").replace("@","").trim();
+    const snap = await db.ref("users").orderByChild("username").equalTo(uname).get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, `❌ @${uname} غير موجود.`); return; }
+    snap.forEach(c => {
+      const u = c.val(); const now = Date.now();
+      let st = u.banned ? "🚫 محظور" : u.status==="active"&&u.subscriptionEnd>now ? `✅ مشترك - ينتهي ${new Date(u.subscriptionEnd).toLocaleDateString("ar-EG")}` : u.status==="trial"&&(now-u.trialStart)<TRIAL_DURATION_MS ? "⏱ في التجربة" : "❌ منتهي";
+      send(ADMIN_BOT_TOKEN, chatId, `👤 <b>${u.firstName||""}</b>\n@${u.username}\nID: ${u.userId}\nالحالة: ${st}\nانضم: ${new Date(u.joinedAt).toLocaleDateString("ar-EG")}`);
     });
     return;
   }
 
-  // /list active|banned|trial
   if (text.startsWith("/list ")) {
-    const filter = text.replace("/list ", "").trim();
+    const filter = text.replace("/list ","").trim();
     const snap = await db.ref("users").get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, "لا يوجد مستخدمون.");
-      return;
-    }
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, "لا يوجد مستخدمون."); return; }
     const now = Date.now();
-    let users = Object.values(snap.val());
-    let filtered = [];
-    let title = "";
-
-    if (filter === "active") {
-      filtered = users.filter(u => u.status === "active" && u.subscriptionEnd > now && !u.banned);
-      title = "✅ المشتركون النشطون";
-    } else if (filter === "banned") {
-      filtered = users.filter(u => u.banned);
-      title = "🚫 المحظورون";
-    } else if (filter === "trial") {
-      filtered = users.filter(u => u.status === "trial" && (now - u.trialStart) < TRIAL_DURATION_MS);
-      title = "⏱ في التجربة المجانية";
-    }
-
-    if (filtered.length === 0) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, `${title}\n\nلا يوجد مستخدمون في هذه الفئة.`);
-      return;
-    }
-
-    let listText = `${title} (${filtered.length})\n\n`;
-    filtered.forEach((u, i) => {
-      listText += `${i + 1}. @${u.username} - ${u.firstName || ""}\n`;
-    });
-    await sendMessage(ADMIN_BOT_TOKEN, chatId, listText);
-    return;
-  }
-
-  // /broadcast
-  if (text.startsWith("/broadcast ")) {
-    const broadcastMsg = text.replace("/broadcast ", "").trim();
-    const snap = await db.ref("users").get();
-    if (!snap.exists()) {
-      await sendMessage(ADMIN_BOT_TOKEN, chatId, "❌ لا يوجد مستخدمون.");
-      return;
-    }
     const users = Object.values(snap.val());
-    let sent = 0, failed = 0;
-    for (const user of users) {
-      if (user.banned) continue;
-      try {
-        await sendMessage(CLIENT_BOT_TOKEN, user.userId,
-          `📢 <b>إعلان من الخُلاصة:</b>\n\n${broadcastMsg}`
-        );
-        sent++;
-      } catch (e) { failed++; }
-    }
-    await sendMessage(ADMIN_BOT_TOKEN, chatId,
-      `📢 <b>تم الإرسال</b>\n✅ وصل لـ: ${sent}\n❌ فشل: ${failed}`
-    );
+    let filtered, title;
+    if (filter==="active") { filtered=users.filter(u=>u.status==="active"&&u.subscriptionEnd>now&&!u.banned); title="✅ المشتركون"; }
+    else if (filter==="banned") { filtered=users.filter(u=>u.banned); title="🚫 المحظورون"; }
+    else { filtered=users.filter(u=>u.status==="trial"&&(now-u.trialStart)<TRIAL_DURATION_MS); title="⏱ في التجربة"; }
+    if (!filtered.length) { await send(ADMIN_BOT_TOKEN, chatId, `${title}\n\nلا يوجد.`); return; }
+    let txt = `${title} (${filtered.length})\n\n`;
+    filtered.forEach((u,i) => txt += `${i+1}. @${u.username} - ${u.firstName||""}\n`);
+    await send(ADMIN_BOT_TOKEN, chatId, txt);
     return;
   }
 
-  // Unknown command
-  await sendMessage(ADMIN_BOT_TOKEN, chatId, "❓ أمر غير معروف. ابعت /start لقائمة الأوامر.");
+  if (text.startsWith("/broadcast ")) {
+    const msg2 = text.replace("/broadcast ","").trim();
+    const snap = await db.ref("users").get();
+    if (!snap.exists()) { await send(ADMIN_BOT_TOKEN, chatId, "لا يوجد مستخدمون."); return; }
+    const users = Object.values(snap.val());
+    let sent=0, failed=0;
+    for (const u of users) {
+      if (u.banned) continue;
+      try { await send(CLIENT_BOT_TOKEN, u.userId, `📢 <b>إعلان من الخُلاصة:</b>\n\n${msg2}`); sent++; } catch { failed++; }
+    }
+    await send(ADMIN_BOT_TOKEN, chatId, `📢 تم\n✅ ${sent}\n❌ ${failed}`);
+    return;
+  }
+
+  await send(ADMIN_BOT_TOKEN, chatId, "❓ أمر غير معروف. /start للقائمة");
 }
 
-// =================== MAIN HANDLER ===================
-module.exports = async (req, res) => {
-  if (req.method !== "POST") {
-    return res.status(200).send("الخُلاصة Bot is running ✅");
+// =================== VIDEO ADMIN BOT ===================
+async function handleVideoAdmin(update) {
+  const msg = update.message;
+  if (!msg || msg.from.id !== ADMIN_ID) return;
+  const chatId = msg.chat.id;
+  const text = msg.text || "";
+
+  if (text === "/start") {
+    await send(VIDEO_BOT_TOKEN, chatId,
+      `🎬 <b>بوت إدارة الفيديوهات</b>\n\n` +
+      `لإضافة فيديو:\n` +
+      `<code>/add مادة | اسم المدرس | اسم الدرس | عنوان الفيديو | الرابط</code>\n\n` +
+      `<b>أسماء المواد:</b>\n` +
+      `arabic, english, physics, chemistry, biology, math\n\n` +
+      `<b>مثال:</b>\n` +
+      `<code>/add physics | أ. محمد عبد المعبود | الكهرباء | الجزء الأول | https://t.me/...</code>\n\n` +
+      `أوامر أخرى:\n` +
+      `/list - عرض كل المحتوى\n` +
+      `/delete مادة | مدرس | درس | عنوان - حذف فيديو`
+    );
+    return;
   }
+
+  if (text.startsWith("/add ")) {
+    const parts = text.replace("/add ","").split("|").map(s=>s.trim());
+    if (parts.length < 5) {
+      await send(VIDEO_BOT_TOKEN, chatId, "❌ الصيغة غلط!\n\n/add مادة | مدرس | درس | عنوان | رابط");
+      return;
+    }
+    const [subject, teacher, lesson, title, url] = parts;
+    if (!SUBJECTS[subject]) {
+      await send(VIDEO_BOT_TOKEN, chatId, `❌ اسم المادة غلط!\nالمواد: ${Object.keys(SUBJECTS).join(", ")}`);
+      return;
+    }
+    await db.ref(`content/${subject}/${teacher}/${lesson}/${title}`).set(url);
+    await send(VIDEO_BOT_TOKEN, chatId,
+      `✅ <b>تم إضافة الفيديو!</b>\n\n` +
+      `📚 المادة: ${SUBJECTS[subject].name}\n` +
+      `👨‍🏫 المدرس: ${teacher}\n` +
+      `📖 الدرس: ${lesson}\n` +
+      `🎬 العنوان: ${title}`
+    );
+    return;
+  }
+
+  if (text === "/list") {
+    const snap = await db.ref("content").get();
+    if (!snap.exists()) { await send(VIDEO_BOT_TOKEN, chatId, "لا يوجد محتوى بعد."); return; }
+    const content = snap.val();
+    let txt = "📋 <b>المحتوى الحالي:</b>\n\n";
+    for (const [sub, teachers] of Object.entries(content)) {
+      txt += `📚 <b>${SUBJECTS[sub]?.name || sub}</b>\n`;
+      for (const [teacher, lessons] of Object.entries(teachers)) {
+        txt += `  👨‍🏫 ${teacher}\n`;
+        for (const [lesson, videos] of Object.entries(lessons)) {
+          txt += `    📖 ${lesson} (${Object.keys(videos).length} فيديو)\n`;
+        }
+      }
+      txt += "\n";
+    }
+    await send(VIDEO_BOT_TOKEN, chatId, txt);
+    return;
+  }
+
+  if (text.startsWith("/delete ")) {
+    const parts = text.replace("/delete ","").split("|").map(s=>s.trim());
+    if (parts.length < 4) {
+      await send(VIDEO_BOT_TOKEN, chatId, "❌ الصيغة: /delete مادة | مدرس | درس | عنوان");
+      return;
+    }
+    const [subject, teacher, lesson, title] = parts;
+    await db.ref(`content/${subject}/${teacher}/${lesson}/${title}`).remove();
+    await send(VIDEO_BOT_TOKEN, chatId, `🗑 تم حذف: ${title}`);
+    return;
+  }
+
+  await send(VIDEO_BOT_TOKEN, chatId, "❓ /start للقائمة");
+}
+
+// =================== MAIN ===================
+module.exports = async (req, res) => {
+  if (req.method !== "POST") return res.status(200).send("الخُلاصة ✅");
   try {
     const path = req.url || "";
     const update = req.body;
-    if (path.includes("/api/client")) await handleClientBot(update);
-    else if (path.includes("/api/admin")) await handleAdminBot(update);
+    if (path.includes("/api/client")) await handleClient(update);
+    else if (path.includes("/api/admin")) await handleAdmin(update);
+    else if (path.includes("/api/video")) await handleVideoAdmin(update);
     res.status(200).json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(200).json({ ok: false });
   }
 };
-    
