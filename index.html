@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Orbit" />
+  <meta name="description" content="Orbit - منصة التواصل الاجتماعي الأقوى" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Orbit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+      <div class="splash-logo">
+        <div class="orbit-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="8" fill="#7c3aed"/>
+            <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#7c3aed" stroke-width="3" opacity="0.9"/>
+            <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.6" transform="rotate(60 50 50)"/>
+            <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.6" transform="rotate(120 50 50)"/>
+            <circle cx="88" cy="50" r="4" fill="#06b6d4"/>
+            <circle cx="31" cy="24" r="3" fill="#a855f7"/>
+          </svg>
+        </div>
+        <h1>Orbit</h1>
+        <p>اكتشف عالمك</p>
+      </div>
+      <div class="splash-loader">
+        <div class="loader-bar"></div>
+      </div>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="hidden">
+      <div class="auth-bg">
+        <div class="auth-orb orb1"></div>
+        <div class="auth-orb orb2"></div>
+        <div class="auth-orb orb3"></div>
+      </div>
+      <div class="auth-content">
+        <div class="auth-logo">
+          <div class="orbit-icon-sm">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="8" fill="#7c3aed"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#7c3aed" stroke-width="3" opacity="0.9"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.6" transform="rotate(60 50 50)"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.6" transform="rotate(120 50 50)"/>
+            </svg>
+          </div>
+          <h2>Orbit</h2>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">تسجيل الدخول</button>
+          <button class="auth-tab" data-tab="register">حساب جديد</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="auth-form">
+          <div class="form-group">
+            <label>رقم الموبايل أو الإيميل</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="login-identifier" placeholder="رقم موبايلك أو إيميلك" autocomplete="username" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>كلمة السر</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="login-password" placeholder="كلمة السر" autocomplete="current-password" />
+              <button class="toggle-pass" onclick="togglePass('login-password')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="forgot-btn">نسيت كلمة السر؟</button>
+          <button class="primary-btn" onclick="handleLogin()">
+            <span>دخول</span>
+            <div class="btn-loader hidden"></div>
+          </button>
+          <div class="divider"><span>أو</span></div>
+          <button class="social-btn google-btn" onclick="handleGoogleLogin()">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            متابعة بـ Google
+          </button>
+          <div class="phone-login-section">
+            <button class="social-btn phone-btn" onclick="showPhoneLogin()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.44 2 2 0 0 1 3.59 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.12 6.12l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              دخول برقم الموبايل (OTP)
+            </button>
+          </div>
+        </div>
+
+        <!-- Phone OTP Section -->
+        <div id="phone-login-form" class="auth-form hidden">
+          <button class="back-btn" onclick="hidePhoneLogin()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><polyline points="9,18 15,12 9,6"/></svg>
+            رجوع
+          </button>
+          <div class="form-group">
+            <label>رقم الموبايل</label>
+            <div class="input-wrap phone-input-wrap">
+              <select id="country-code">
+                <option value="+20">🇪🇬 +20</option>
+                <option value="+966">🇸🇦 +966</option>
+                <option value="+971">🇦🇪 +971</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+              </select>
+              <input type="tel" id="phone-number" placeholder="01xxxxxxxxx" />
+            </div>
+          </div>
+          <button class="primary-btn" onclick="sendOTP()">
+            <span>إرسال الكود</span>
+            <div class="btn-loader hidden"></div>
+          </button>
+          <div id="otp-section" class="hidden">
+            <p class="otp-info">تم إرسال الكود على التيليجرام الخاص بك</p>
+            <div class="form-group">
+              <label>كود التحقق</label>
+              <div class="otp-inputs">
+                <input type="number" maxlength="1" class="otp-input" />
+                <input type="number" maxlength="1" class="otp-input" />
+                <input type="number" maxlength="1" class="otp-input" />
+                <input type="number" maxlength="1" class="otp-input" />
+                <input type="number" maxlength="1" class="otp-input" />
+                <input type="number" maxlength="1" class="otp-input" />
+              </div>
+            </div>
+            <button class="primary-btn" onclick="verifyOTP()">تأكيد الكود</button>
+            <button class="resend-btn" onclick="resendOTP()">إعادة الإرسال (60s)</button>
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="auth-form hidden">
+          <div class="form-row">
+            <div class="form-group">
+              <label>الاسم الأول</label>
+              <div class="input-wrap">
+                <input type="text" id="reg-firstname" placeholder="أحمد" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>اسم العائلة</label>
+              <div class="input-wrap">
+                <input type="text" id="reg-lastname" placeholder="محمد" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>رقم الموبايل</label>
+            <div class="input-wrap">
+              <input type="tel" id="reg-phone" placeholder="01xxxxxxxxx" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>الإيميل (اختياري)</label>
+            <div class="input-wrap">
+              <input type="email" id="reg-email" placeholder="email@example.com" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>تاريخ الميلاد</label>
+              <div class="input-wrap">
+                <input type="date" id="reg-dob" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>الجنس</label>
+              <div class="input-wrap">
+                <select id="reg-gender">
+                  <option value="">اختر</option>
+                  <option value="male">ذكر</option>
+                  <option value="female">أنثى</option>
+                  <option value="other">أخرى</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>كلمة السر</label>
+            <div class="input-wrap">
+              <input type="password" id="reg-password" placeholder="8 أحرف على الأقل" />
+              <button class="toggle-pass" onclick="togglePass('reg-password')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="primary-btn" onclick="handleRegister()">
+            <span>إنشاء الحساب</span>
+            <div class="btn-loader hidden"></div>
+          </button>
+        </div>
+
+        <div id="auth-message" class="auth-message hidden"></div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+      <!-- Header -->
+      <header id="app-header">
+        <div class="header-left">
+          <div class="header-logo">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+              <circle cx="50" cy="50" r="8" fill="#7c3aed"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#7c3aed" stroke-width="3" opacity="0.9"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#06b6d4" stroke-width="2.5" opacity="0.7" transform="rotate(60 50 50)"/>
+              <ellipse cx="50" cy="50" rx="38" ry="15" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.6" transform="rotate(120 50 50)"/>
+              <circle cx="88" cy="50" r="4" fill="#06b6d4"/>
+            </svg>
+            <span>Orbit</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="header-btn" onclick="openSearch()" title="بحث">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="header-btn notif-btn" onclick="showPage('notifications')" title="إشعارات">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-badge">3</span>
+          </button>
+          <button class="header-btn" onclick="showPage('messages')" title="الرسائل">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="msg-badge">5</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Search Overlay -->
+      <div id="search-overlay" class="hidden">
+        <div class="search-header">
+          <div class="search-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search-input" placeholder="ابحث عن أي حاجة..." oninput="doSearch(this.value)" />
+            <button onclick="closeSearch()">إلغاء</button>
+          </div>
+        </div>
+        <div class="search-results" id="search-results">
+          <div class="search-category">
+            <h4>اقتراحات</h4>
+            <div class="search-tags">
+              <span onclick="doSearch('كورة')">كورة</span>
+              <span onclick="doSearch('موسيقى')">موسيقى</span>
+              <span onclick="doSearch('سفر')">سفر</span>
+              <span onclick="doSearch('تقنية')">تقنية</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pages Container -->
+      <div id="pages-container">
+
+        <!-- HOME PAGE -->
+        <div id="page-home" class="page active">
+          <!-- Stories -->
+          <div class="stories-container">
+            <div class="stories-scroll">
+              <div class="story-item add-story" onclick="addStory()">
+                <div class="story-avatar">
+                  <img src="https://ui-avatars.com/api/?name=أنت&background=7c3aed&color=fff&size=60&font-size=0.4" alt="أنت" />
+                  <div class="story-add-icon">+</div>
+                </div>
+                <span>إضافة</span>
+              </div>
+              <div class="story-item" onclick="viewStory('sara')">
+                <div class="story-avatar has-story">
+                  <img src="https://ui-avatars.com/api/?name=سارة&background=ec4899&color=fff&size=60" alt="سارة" />
+                </div>
+                <span>سارة</span>
+              </div>
+              <div class="story-item" onclick="viewStory('omar')">
+                <div class="story-avatar has-story">
+                  <img src="https://ui-avatars.com/api/?name=عمر&background=06b6d4&color=fff&size=60" alt="عمر" />
+                </div>
+                <span>عمر</span>
+              </div>
+              <div class="story-item" onclick="viewStory('nour')">
+                <div class="story-avatar has-story">
+                  <img src="https://ui-avatars.com/api/?name=نور&background=f59e0b&color=fff&size=60" alt="نور" />
+                </div>
+                <span>نور</span>
+              </div>
+              <div class="story-item" onclick="viewStory('karim')">
+                <div class="story-avatar has-story">
+                  <img src="https://ui-avatars.com/api/?name=كريم&background=10b981&color=fff&size=60" alt="كريم" />
+                </div>
+                <span>كريم</span>
+              </div>
+              <div class="story-item" onclick="viewStory('hana')">
+                <div class="story-avatar has-story">
+                  <img src="https://ui-avatars.com/api/?name=هنا&background=8b5cf6&color=fff&size=60" alt="هنا" />
+                </div>
+                <span>هنا</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Post Composer -->
+          <div class="post-composer" onclick="openPostComposer()">
+            <img src="https://ui-avatars.com/api/?name=أنت&background=7c3aed&color=fff&size=40" alt="أنت" class="composer-avatar" />
+            <div class="composer-input">بماذا تفكر؟</div>
+            <div class="composer-actions">
+              <button class="composer-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <button class="composer-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Feed -->
+          <div id="feed" class="feed-container">
+            <!-- Posts will be dynamically loaded -->
+          </div>
+
+          <div class="feed-loader" id="feed-loader">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- REELS PAGE -->
+        <div id="page-reels" class="page">
+          <div class="reels-container" id="reels-container">
+            <div class="reel-item active-reel">
+              <video class="reel-video" loop muted playsinline>
+                <source src="" type="video/mp4" />
+              </video>
+              <div class="reel-overlay">
+                <div class="reel-info">
+                  <div class="reel-user">
+                    <img src="https://ui-avatars.com/api/?name=عمر&background=06b6d4&color=fff&size=40" alt="عمر" />
+                    <div>
+                      <span class="reel-username">عمر أحمد</span>
+                      <button class="follow-btn-sm">تابع</button>
+                    </div>
+                  </div>
+                  <p class="reel-caption">منظر جميل من القاهرة 🌆 #cairo #egypt</p>
+                  <div class="reel-music">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="14"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    <span>موسيقى - Amr Diab</span>
+                  </div>
+                </div>
+                <div class="reel-actions">
+                  <button class="reel-action-btn" onclick="toggleReelLike(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span>2.4K</span>
+                  </button>
+                  <button class="reel-action-btn" onclick="openComments()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>182</span>
+                  </button>
+                  <button class="reel-action-btn" onclick="shareReel()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    <span>شارك</span>
+                  </button>
+                  <button class="reel-action-btn" onclick="saveReel()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    <span>حفظ</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MARKETPLACE PAGE -->
+        <div id="page-marketplace" class="page">
+          <div class="page-header-inner">
+            <h2>الماركت</h2>
+            <button class="add-listing-btn" onclick="addListing()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              إضافة إعلان
+            </button>
+          </div>
+          <div class="market-categories">
+            <button class="cat-btn active" onclick="filterMarket('all', this)">الكل</button>
+            <button class="cat-btn" onclick="filterMarket('electronics', this)">إلكترونيات</button>
+            <button class="cat-btn" onclick="filterMarket('cars', this)">سيارات</button>
+            <button class="cat-btn" onclick="filterMarket('clothes', this)">ملابس</button>
+            <button class="cat-btn" onclick="filterMarket('furniture', this)">أثاث</button>
+            <button class="cat-btn" onclick="filterMarket('jobs', this)">وظائف</button>
+          </div>
+          <div class="market-grid" id="market-grid">
+            <!-- Market items loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- PROFILE PAGE -->
+        <div id="page-profile" class="page">
+          <div class="profile-cover">
+            <img src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&q=80" alt="Cover" class="cover-img" id="cover-img" />
+            <button class="edit-cover-btn" onclick="editCover()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+          <div class="profile-info-card">
+            <div class="profile-avatar-wrap">
+              <img src="https://ui-avatars.com/api/?name=أنت&background=7c3aed&color=fff&size=90&font-size=0.4" alt="أنت" class="profile-avatar" id="profile-avatar" />
+              <button class="edit-avatar-btn" onclick="editAvatar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            </div>
+            <div class="profile-details">
+              <h3 id="profile-name">أحمد محمد</h3>
+              <p id="profile-bio">مرحباً في Orbit 🚀 | شاركني رحلتي</p>
+              <div class="profile-stats">
+                <div class="stat"><strong id="post-count">0</strong><span>بوست</span></div>
+                <div class="stat"><strong>248</strong><span>متابع</span></div>
+                <div class="stat"><strong>312</strong><span>يتابع</span></div>
+              </div>
+              <button class="edit-profile-btn" onclick="openEditProfile()">تعديل الملف الشخصي</button>
+            </div>
+          </div>
+          <div class="profile-posts-grid" id="profile-posts-grid">
+            <!-- Profile posts -->
+          </div>
+        </div>
+
+        <!-- NOTIFICATIONS PAGE -->
+        <div id="page-notifications" class="page">
+          <div class="page-header-inner">
+            <h2>الإشعارات</h2>
+            <button class="mark-read-btn" onclick="markAllRead()">قراءة الكل</button>
+          </div>
+          <div class="notifs-list" id="notifs-list">
+            <!-- Notifications loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- MESSAGES PAGE -->
+        <div id="page-messages" class="page">
+          <div class="page-header-inner">
+            <h2>الرسائل</h2>
+            <button class="new-msg-btn" onclick="openNewMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+          <!-- Messenger Promo Banner -->
+          <div class="messenger-promo">
+            <div class="messenger-promo-content">
+              <div class="messenger-promo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="36" height="36"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="messenger-promo-text">
+                <h3>Orbit Messenger</h3>
+                <p>تجربة مراسلة أفضل مع مكالمات فيديو ومجموعات</p>
+              </div>
+            </div>
+            <div class="messenger-promo-btns">
+              <button class="promo-btn-primary" onclick="useMessengerInApp()">استخدام داخل التطبيق</button>
+              <button class="promo-btn-secondary" onclick="downloadMessenger()">تحميل التطبيق</button>
+            </div>
+          </div>
+          <div class="search-messages">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="ابحث في الرسائل..." />
+          </div>
+          <div class="conversations-list" id="conversations-list">
+            <!-- Conversations loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- CHAT PAGE -->
+        <div id="page-chat" class="page">
+          <div class="chat-header">
+            <button class="back-chat-btn" onclick="showPage('messages')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"><polyline points="9,18 15,12 9,6"/></svg>
+            </button>
+            <img src="" alt="" class="chat-avatar" id="chat-partner-avatar" />
+            <div class="chat-partner-info">
+              <h4 id="chat-partner-name"></h4>
+              <span id="chat-partner-status">متصل الآن</span>
+            </div>
+            <div class="chat-actions">
+              <button class="chat-action-btn" onclick="startVoiceCall()" title="مكالمة صوتية">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.44 2 2 0 0 1 3.59 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.12 6.12l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </button>
+              <button class="chat-action-btn" onclick="startVideoCall()" title="مكالمة فيديو">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <!-- Messages loaded dynamically -->
+          </div>
+          <div class="chat-input-area">
+            <button class="chat-attach-btn" onclick="attachFile()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="text" class="chat-input" id="chat-input" placeholder="اكتب رسالة..." onkeypress="handleChatKeypress(event)" />
+            <button class="chat-send-btn" onclick="sendChatMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="page-settings" class="page">
+          <div class="page-header-inner">
+            <h2>الإعدادات</h2>
+          </div>
+          <div class="settings-list">
+            <div class="settings-section">
+              <h4>الحساب</h4>
+              <div class="setting-item" onclick="openEditProfile()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>تعديل الملف الشخصي</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+              <div class="setting-item" onclick="changePassword()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>تغيير كلمة السر</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h4>المظهر</h4>
+              <div class="setting-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <span>الوضع المضيء / المظلم</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked onchange="toggleDarkMode(this)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-item" onclick="changeTheme()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                <span>تخصيص الألوان</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h4>الخصوصية والأمان</h4>
+              <div class="setting-item" onclick="privacySettings()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>إعدادات الخصوصية</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+              <div class="setting-item" onclick="twoFactor()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <span>التحقق بخطوتين</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+              <div class="setting-item" onclick="blockedUsers()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                <span>المستخدمون المحظورون</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" class="arrow-icon"><polyline points="9,18 15,12 9,6"/></svg>
+              </div>
+            </div>
+            <div class="settings-section">
+              <h4>بيانات الداتا</h4>
+              <div class="setting-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M1 6s+.5-2 2-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2"/><path d="M1 12s.5-2 2-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2"/><path d="M1 18s.5-2 2-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2"/></svg>
+                <span>وضع توفير الداتا</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" onchange="toggleDataSaver(this)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-section danger-section">
+              <div class="setting-item danger-item" onclick="handleLogout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>تسجيل الخروج</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Navigation -->
+      <nav id="bottom-nav">
+        <button class="nav-btn active" data-page="home" onclick="showPage('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+          <span>الرئيسية</span>
+        </button>
+        <button class="nav-btn" data-page="reels" onclick="showPage('reels')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7"/></svg>
+          <span>ريلز</span>
+        </button>
+        <button class="nav-btn post-btn" onclick="openPostComposer()">
+          <div class="post-btn-inner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </button>
+        <button class="nav-btn" data-page="marketplace" onclick="showPage('marketplace')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>الماركت</span>
+        </button>
+        <button class="nav-btn" data-page="profile" onclick="showPage('profile')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>حسابي</span>
+        </button>
+      </nav>
+
+      <!-- Post Composer Modal -->
+      <div id="post-composer-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closePostComposer()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>نشر بوست</h3>
+            <button onclick="closePostComposer()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="composer-body">
+            <div class="composer-user">
+              <img src="https://ui-avatars.com/api/?name=أنت&background=7c3aed&color=fff&size=44" alt="أنت" />
+              <div>
+                <strong id="composer-username">أحمد محمد</strong>
+                <select class="privacy-select">
+                  <option>الجميع</option>
+                  <option>الأصدقاء فقط</option>
+                  <option>أنا فقط</option>
+                </select>
+              </div>
+            </div>
+            <textarea id="post-text" placeholder="بماذا تفكر يا أحمد؟" rows="5"></textarea>
+            <div id="post-media-preview" class="media-preview"></div>
+            <div class="auto-delete-option">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              <label>حذف تلقائي بعد:</label>
+              <select id="auto-delete">
+                <option value="">بلا</option>
+                <option value="1h">ساعة</option>
+                <option value="2h">ساعتين</option>
+                <option value="24h">يوم</option>
+                <option value="7d">أسبوع</option>
+              </select>
+            </div>
+          </div>
+          <div class="composer-footer">
+            <div class="compose-tools">
+              <button onclick="addPhotoToPost()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <button onclick="addVideoToPost()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </button>
+              <button onclick="addEmojiToPost()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              </button>
+            </div>
+            <button class="publish-btn" onclick="publishPost()">نشر</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Story Viewer -->
+      <div id="story-viewer" class="modal hidden">
+        <div class="story-viewer-content">
+          <div class="story-progress-bars" id="story-progress-bars"></div>
+          <div class="story-header-info">
+            <img src="" alt="" id="story-user-avatar" />
+            <div>
+              <strong id="story-user-name"></strong>
+              <span id="story-time"></span>
+            </div>
+            <button onclick="closeStory()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="story-media" id="story-media">
+            <img src="" alt="" id="story-image" />
+          </div>
+          <div class="story-reply">
+            <input type="text" placeholder="رد على القصة..." />
+            <button>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Call Modal -->
+      <div id="video-call-modal" class="modal hidden">
+        <div class="call-content">
+          <div class="call-remote-video">
+            <img src="" alt="" id="call-partner-avatar-lg" />
+            <div class="call-status" id="call-status">جاري الاتصال...</div>
+          </div>
+          <div class="call-local-video">
+            <div class="local-video-placeholder">أنت</div>
+          </div>
+          <div class="call-controls">
+            <button class="call-ctrl-btn" onclick="toggleMic()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <button class="call-ctrl-btn" onclick="toggleCam()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </button>
+            <button class="call-ctrl-btn end-call-btn" onclick="endCall()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 13"/><path d="M22 2L2 22"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Modal -->
+      <div id="comments-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeComments()"></div>
+        <div class="modal-sheet">
+          <div class="sheet-handle"></div>
+          <h3>التعليقات</h3>
+          <div class="comments-list" id="comments-list">
+            <!-- Comments -->
+          </div>
+          <div class="comment-input-area">
+            <img src="https://ui-avatars.com/api/?name=أنت&background=7c3aed&color=fff&size=36" alt="أنت" />
+            <input type="text" id="comment-input" placeholder="أكتب تعليق..." />
+            <button onclick="sendComment()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Profile Modal -->
+      <div id="edit-profile-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeEditProfile()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>تعديل الملف الشخصي</h3>
+            <button onclick="closeEditProfile()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="composer-body">
+            <div class="form-group">
+              <label>الاسم</label>
+              <div class="input-wrap">
+                <input type="text" id="edit-name" placeholder="اسمك" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>السيرة الذاتية</label>
+              <div class="input-wrap">
+                <textarea id="edit-bio" placeholder="بضع كلمات عنك..." rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="composer-footer">
+            <button class="publish-btn" onclick="saveProfile()">حفظ التغييرات</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>
